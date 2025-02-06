@@ -1,0 +1,30 @@
+nelmio_api_doc:
+    use_validation_groups: true
+    documentation:
+        info:
+            title: 'API Jeux Vidéos'
+            description: 'Documentation de l''API des jeux vidéos'
+            version: '1.0.0'
+            contact:
+                name: 'Équipe API'
+                email: 'api@example.com'
+        components:
+            securitySchemes:
+                Bearer:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+        
+        security:
+            - Bearer: []    
+
+        tags:
+            - name: 'Editor'
+              description: 'Opérations sur les éditeurs'
+            - name: 'Games'
+              description: 'Opérations sur les jeux'
+
+    areas:
+        default:
+            path_patterns:
+                - ^/api/v1
