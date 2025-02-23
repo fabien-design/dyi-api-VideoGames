@@ -19,10 +19,16 @@ nelmio_api_doc:
             - Bearer: []    
 
         tags:
-            - name: 'Editor'
-              description: 'Opérations sur les éditeurs'
-            - name: 'Games'
-              description: 'Opérations sur les jeux'
+            -   name: Authentication
+                description: Endpoints pour l'authentification
+            -   name: Video Game
+                description: Gestion des jeux vidéo
+            -   name: Editor 
+                description: Opérations sur les éditeurs
+            -   name: Category
+                description: Gestion des catégories
+            -   name: User
+                description: Gestion des utilisateurs
 
     areas:
         default:
