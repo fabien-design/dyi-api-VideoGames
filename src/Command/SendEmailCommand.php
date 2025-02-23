@@ -16,7 +16,6 @@ use Symfony\Component\Scheduler\Attribute\AsCronTask;
     name: 'app:send-email',
     description: 'Send notification emails to users subscribed to newsletter',
 )]
-#[AsCronTask('*/2 * * * *')]
 class SendEmailCommand extends Command
 {
     public function __construct(

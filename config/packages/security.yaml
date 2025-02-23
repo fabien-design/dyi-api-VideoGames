@@ -15,7 +15,7 @@ security:
             security: false
 
         login:
-            pattern: ^/api/v1/login_check
+            pattern: ^/api/v1/login
             stateless: true
             json_login:
                 check_path: /api/v1/login_check

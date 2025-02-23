@@ -5,4 +5,4 @@ framework:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 
         routing:
-            App\Scheduler\SendEmailMessage: scheduler-transport
+            Symfony\Component\Console\Messenger\RunCommandMessage: scheduler-transport
