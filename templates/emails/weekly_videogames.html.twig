@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        .game-card {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .game-title {
+            color: #333;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .release-date {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+        .platform {
+            background: #f0f0f0;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: inline-block;
+            margin: 2px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upcoming Video Games This Week</h1>
+
+    {% if games|length > 0 %}
+        {% for game in games %}
+            <div class="game-card">
+                <div class="game-title">{{ game.title }}</div>
+                <div class="release-date">Release Date: {{ game.releaseDate|date('Y-m-d') }}</div>
+                {% if game.platforms is defined %}
+                    <div>
+                        {% for platform in game.platforms %}
+                            <span class="platform">{{ platform }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% if game.description is defined %}
+                    <p>{{ game.description|slice(0, 150) }}...</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No new games scheduled for release this week.</p>
+    {% endif %}
+
+    <footer style="margin-top: 20px; font-size: 12px; color: #666;">
+        <p>This is an automated email about upcoming video game releases.</p>
+        <p>If you wish to unsubscribe, please click <a href="{{ unsubscribe_url|default('#') }}">here</a></p>
+    </footer>
+</body>
+</html>

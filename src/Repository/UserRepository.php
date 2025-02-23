@@ -30,6 +30,15 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return $query->getResult();
     }
 
+    public function findByNewsletterSubscription(bool $subscribed = true): array
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.subscription_to_newsletter = :subscribed')
+            ->setParameter('subscribed', $subscribed)
+            ->getQuery()
+            ->getResult();
+    }
+
     /**
      * Used to upgrade (rehash) the user's password automatically over time.
      */
