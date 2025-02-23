@@ -27,6 +27,17 @@ class VideoGameRepository extends ServiceEntityRepository
         return $query->getResult();
     }
 
+    public function findNextWeekGameRelease(): array
+    {
+        $query = $this->createQueryBuilder('v')
+            ->andWhere('v.releaseDate BETWEEN :start AND :end')
+            ->setParameter('start', new \DateTime('now'))
+            ->setParameter('end', new \DateTime('+7 days'))
+            ->getQuery();
+
+        return $query->getResult();
+    }
+
 //    /**
 //     * @return VideoGame[] Returns an array of VideoGame objects
 //     */
