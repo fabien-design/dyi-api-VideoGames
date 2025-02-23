@@ -7,10 +7,14 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
+use Gedmo\Mapping\Annotation as Gedmo;
 
 #[ORM\Entity(repositoryClass: VideoGameRepository::class)]
+#[Vich\Uploadable]
 class VideoGame
 {
     #[ORM\Id]
@@ -47,6 +51,19 @@ class VideoGame
     )]
     private ?string $description = null;
 
+
+    #[Vich\UploadableField(mapping: 'video_games_covers', fileNameProperty: 'coverImage')]
+    #[Groups(['videoGame:write'])]
+    private ?File $coverFile = null;
+
+    #[ORM\Column(length: 512, nullable: true)]
+    #[Groups(['videoGame:read', 'videoGame:detail'])]
+    private ?string $coverImage = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[Gedmo\Timestampable()]
+    public ?\DateTimeImmutable $updatedAt = null;
+
     /**
      * @var Collection<int, Category>
      */
@@ -61,6 +78,7 @@ class VideoGame
     public function __construct()
     {
         $this->category = new ArrayCollection();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -104,6 +122,42 @@ class VideoGame
         return $this;
     }
 
+    public function getCoverFile(): ?File
+    {
+        return $this->coverFile;
+    }
+
+    public function setCoverFile(?File $coverFile): static
+    {
+        $this->coverFile = $coverFile;
+
+        if (null !== $coverFile) {
+            // It is required that at least one field changes if you are using doctrine
+            // otherwise the event listeners won't be called and the file is lost
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+
+        return $this;
+    }
+
+    public function getCoverImage(): ?string
+    {
+        return $this->coverImage;
+    }
+
+    #[Groups(['videoGame:read', 'videoGame:detail'])]
+    public function getCoverImageUrl(): ?string
+    {
+        return '/images/covers/' . $this->coverImage;
+    }
+
+    public function setCoverImage(?string $coverImage): static
+    {
+        $this->coverImage = $coverImage;
+
+        return $this;
+    }
+
     /**
      * @return Collection<int, Category>
      */
@@ -136,6 +190,26 @@ class VideoGame
     public function setEditor(?Editor $editor): static
     {
         $this->editor = $editor;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+
+    #[ORM\PrePersist]
+    #[ORM\PreUpdate]
+    public function updateTimestamp(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
 
         return $this;
     }

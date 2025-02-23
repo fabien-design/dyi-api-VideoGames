@@ -94,19 +94,24 @@ class VideoGameController extends AbstractController
         description: "Create a new video game",
         requestBody: new OA\RequestBody(
             required: true,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: "title", type: "string", example: "Zelda the latest adventure"),
-                    new OA\Property(property: "releaseDate", type: "string", format: "date", example: "2024-02-28"),
-                    new OA\Property(property: "description", type: "string", example: "A great game, really!"),
-                    new OA\Property(property: "editor", type: "integer", example: 3),
-                    new OA\Property(
-                        property: "categories",
-                        type: "array",
-                        items: new OA\Items(type: "integer"),
-                        example: [6, 9]
-                    )
-                ]
+            content: new OA\MediaType(
+                mediaType: "multipart/form-data",
+                schema: new OA\Schema(
+                    type: "object",
+                    properties: [
+                        new OA\Property(property: "title", type: "string", example: "Zelda the latest adventure"),
+                        new OA\Property(property: "releaseDate", type: "string", format: "date", example: "2024-02-28"),
+                        new OA\Property(property: "description", type: "string", example: "A great game, really!"),
+                        new OA\Property(property: "editor", type: "integer", example: 3),
+                        new OA\Property(
+                            property: "categories",
+                            type: "array",
+                            items: new OA\Items(type: "integer"),
+                            example: [6, 9]
+                        ),
+                        new OA\Property(property: "coverFile", type: "string", format: "binary")
+                    ]
+                )
             )
         )
     )]
@@ -123,32 +128,46 @@ class VideoGameController extends AbstractController
         EditorRepository $editorRepository,
         CategoryRepository $categoryRepository
     ): JsonResponse {
-        $data = json_decode($request->getContent(), true);
-        
-        $editorId = filter_var($data['editor'], FILTER_SANITIZE_NUMBER_INT);
+        $videoGame = new VideoGame();
+
+        // Récupérer les données du formulaire
+        $title = $request->request->get('title');
+        $releaseDate = new \DateTime($request->request->get('releaseDate'));
+        $description = $request->request->get('description');
+        $editorId = $request->request->get('editor');
+        $categoriesIds = json_decode($request->request->get('categories', '[]'), true);
+
+        $videoGame->setTitle($title);
+        $videoGame->setReleaseDate($releaseDate);
+        $videoGame->setDescription($description);
+
         $editor = $editorRepository->find($editorId);
         if (!$editor) {
             return $this->json(['error' => 'Editor not found'], Response::HTTP_NOT_FOUND);
         }
+        $videoGame->setEditor($editor);
 
-        $categories = [];
-        foreach ($data['categories'] as $categoryIri) {
-            $categoryId = filter_var($categoryIri, FILTER_SANITIZE_NUMBER_INT);
+        foreach ($categoriesIds as $categoryId) {
             $category = $categoryRepository->find($categoryId);
             if (!$category) {
                 return $this->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
             }
-            $categories[] = $category;
-        }
-
-        $videoGame = $serializer->deserialize($request->getContent(), VideoGame::class, 'json', [
-            AbstractNormalizer::IGNORED_ATTRIBUTES => ['editor', 'categories'],
-            "groups" => "videoGame:write"
-        ]);
-        $videoGame->setEditor($editor);
-        
-        foreach ($categories as $category) {
             $videoGame->addCategory($category);
+        }
+        
+        $coverFile = $request->files->get('coverFile');
+
+        if ($coverFile) {
+            if (!$coverFile->isValid()) {
+                return $this->json(['error' => 'Upload failed'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $mimeType = $coverFile->getMimeType();
+            if (!str_starts_with($mimeType, 'image/')) {
+                return $this->json(['error' => 'Le fichier doit être une image'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $videoGame->setCoverFile($coverFile);
         }
 
         $errors = $validator->validate($videoGame);
@@ -159,53 +178,71 @@ class VideoGameController extends AbstractController
         $em->persist($videoGame);
         $em->flush();
 
-        return $this->json($videoGame, Response::HTTP_CREATED, [], ['groups' => ['videoGame:read', 'videoGame:detail']]);
+        return $this->json(
+            $videoGame, 
+            Response::HTTP_CREATED, 
+            [], 
+            ['groups' => ['videoGame:read', 'videoGame:detail']]
+        );
     }
 
-    #[Route('/{id}',
+    #[Route('/{id}/edit',
     name: 'video_game_update',
     requirements: ['id' => Requirement::DIGITS],
-    methods: ['PUT'])]
+    methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN', message: 'Access denied, you must be an admin to access this route')]
     #[OA\Put(
         description: "Update a video game",
         requestBody: new OA\RequestBody(
             required: true,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: "title", type: "string", example: "Zelda the latest adventure"),
-                    new OA\Property(property: "releaseDate", type: "string", format: "date", example: "2024-02-28"),
-                    new OA\Property(property: "description", type: "string", example: "A great game, really!"),
-                    new OA\Property(property: "editor", type: "integer", example: 3),
-                    new OA\Property(
-                        property: "categories",
-                        type: "array",
-                        items: new OA\Items(type: "integer"),
-                        example: [6, 9]
-                    )
-                ]
+            content: new OA\MediaType(
+                mediaType: "multipart/form-data",
+                schema: new OA\Schema(
+                    type: "object",
+                    properties: [
+                        new OA\Property(property: "title", type: "string", example: "Zelda the latest adventure"),
+                        new OA\Property(property: "releaseDate", type: "string", format: "date", example: "2024-02-28"),
+                        new OA\Property(property: "description", type: "string", example: "A great game, really!"),
+                        new OA\Property(property: "editor", type: "integer", example: 3),
+                        new OA\Property(
+                            property: "categories",
+                            type: "array",
+                            items: new OA\Items(type: "integer"),
+                            example: [6, 9]
+                        ),
+                        new OA\Property(property: "coverFile", type: "string", format: "binary")
+                    ]
+                )
             )
         )
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'Content updated',
-        content: new Model(type: VideoGame::class, groups: ['videoGame:read', 'videoGame:detail'])
     )]
     public function update(
         VideoGame $videoGame,
         Request $request,
         EntityManagerInterface $em,
-        SerializerInterface $serializer,
         ValidatorInterface $validator,
         TagAwareCacheInterface $cachePool,
         EditorRepository $editorRepository,
         CategoryRepository $categoryRepository
     ): JsonResponse {
-        $data = json_decode($request->getContent(), true);
+        // Récupérer les données du formulaire
+        $title = $request->request->get('title');
+        $releaseDate = $request->request->get('releaseDate') ? new \DateTime($request->request->get('releaseDate')) : null;
+        $description = $request->request->get('description');
+        $editorId = $request->request->get('editor');
+        $categoriesIds = json_decode($request->request->get('categories', '[]'), true);
 
-        if (isset($data['editor'])) {
-            $editorId = filter_var($data['editor'], FILTER_SANITIZE_NUMBER_INT);
+        if ($title) {
+            $videoGame->setTitle($title);
+        }
+        if ($releaseDate) {
+            $videoGame->setReleaseDate($releaseDate);
+        }
+        if ($description) {
+            $videoGame->setDescription($description);
+        }
+
+        if ($editorId) {
             $editor = $editorRepository->find($editorId);
             if (!$editor) {
                 return $this->json(['error' => 'Editor not found'], Response::HTTP_NOT_FOUND);
@@ -213,14 +250,12 @@ class VideoGameController extends AbstractController
             $videoGame->setEditor($editor);
         }
 
-        if (isset($data['categories'])) {
+        if (!empty($categoriesIds)) {
             foreach ($videoGame->getCategory() as $category) {
                 $videoGame->removeCategory($category);
             }
 
-            // Ajouter les nouvelles catégories
-            foreach ($data['categories'] as $categoryId) {
-                $categoryId = filter_var($categoryId, FILTER_SANITIZE_NUMBER_INT);
+            foreach ($categoriesIds as $categoryId) {
                 $category = $categoryRepository->find($categoryId);
                 if (!$category) {
                     return $this->json(['error' => 'Category not found'], Response::HTTP_NOT_FOUND);
@@ -229,19 +264,34 @@ class VideoGameController extends AbstractController
             }
         }
 
-        $updatedVideoGame = $serializer->deserialize($request->getContent(), VideoGame::class, 'json', [
-            AbstractNormalizer::OBJECT_TO_POPULATE => $videoGame,
-        ]);
+        $coverFile = $request->files->get('coverFile');
+        if ($coverFile) {
+            if (!$coverFile->isValid()) {
+                return $this->json(['error' => 'Upload failed'], Response::HTTP_BAD_REQUEST);
+            }
 
-        $errors = $validator->validate($updatedVideoGame);
-        if (count($errors) > 0) {
-            return $this->json($errors, status: Response::HTTP_BAD_REQUEST);
+            $mimeType = $coverFile->getMimeType();
+            if (!str_starts_with($mimeType, 'image/')) {
+                return $this->json(['error' => 'Le fichier doit être une image'], Response::HTTP_BAD_REQUEST);
+            }
+
+            try {
+                $videoGame->setCoverFile($coverFile);
+            } catch (\Exception $e) {
+                return $this->json(['error' => 'Erreur lors de l\'upload: ' . $e->getMessage()], Response::HTTP_BAD_REQUEST);
+            }
         }
-        $em->persist($updatedVideoGame);
+
+        $errors = $validator->validate($videoGame);
+        if (count($errors) > 0) {
+            return $this->json($errors, Response::HTTP_BAD_REQUEST);
+        }
+
+        $em->persist($videoGame);
         $em->flush();
         $cachePool->invalidateTags(['videogamesCache']);
 
-        return $this->json($updatedVideoGame, context: [
+        return $this->json($videoGame, context: [
             'groups' => ['videoGame:read', 'videoGame:detail']
         ]);
     }
