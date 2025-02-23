@@ -17,7 +17,8 @@ class VideoGameFixtures extends Fixture implements DependentFixtureInterface
             'description' => 'An action-adventure game developed and published by Nintendo.',
             'releaseDate' => '2017-03-03',
             'categories' => ['3', '0'],
-            'editor' => '1'
+            'editor' => '1',
+            'coverImage' => 'thelegendofzeldabreathofthewild.jpg'
         ],
         [
             'title' => 'The Witcher 3: Wild Hunt',
@@ -66,14 +67,16 @@ class VideoGameFixtures extends Fixture implements DependentFixtureInterface
             'description' => 'An action role-playing game developed and published by CD Projekt.',
             'releaseDate' => '2020-12-10',
             'categories' => ['1', '2'],
-            'editor' => '1'
+            'editor' => '1',
+            'coverImage' => 'cyberpunk2077.jpg'
         ],
         [
             'title' => 'Assassin\'s Creed Valhalla',
             'description' => 'An action role-playing game developed and published by Ubisoft.',
             'releaseDate' => '2020-11-10',
             'categories' => ['1', '2'],
-            'editor' => '4'
+            'editor' => '4',
+            'coverImage' => 'assassinscreedvalhalla.jpg'
         ],
         [
             'title' => 'Call of Duty: Warzone',
@@ -164,7 +167,8 @@ class VideoGameFixtures extends Fixture implements DependentFixtureInterface
             'description' => 'A vehicular soccer game developed and published by Psyonix.',
             'releaseDate' => '2015-07-07',
             'categories' => ['1'],
-            'editor' => '11'
+            'editor' => '11',
+            'coverImage' => 'rocketleague.jpg'
         ],
         [
             'title' => 'Among Us',
@@ -217,13 +221,42 @@ class VideoGameFixtures extends Fixture implements DependentFixtureInterface
         ],
     ];
 
+    private string $fixturesPath;
+    private string $uploadsPath;
+
+
+    public function __construct()
+    {
+        $this->fixturesPath = __DIR__ . '/../../public/images/fixtures/';
+        $this->uploadsPath = __DIR__.'/../../public/images/covers/';
+    }
+
     public function load(ObjectManager $manager): void
     {
+        // Créer le dossier des uploads s'il n'existe pas
+        if (!file_exists($this->uploadsPath)) {
+            mkdir($this->uploadsPath, 0777, true);
+        }
+
         foreach (self::VIDEO_GAMES as $videoGameData) {
             $videoGame = new VideoGame();
             $videoGame->setTitle($videoGameData['title']);
             $videoGame->setDescription($videoGameData['description']);
             $videoGame->setReleaseDate(new \DateTime($videoGameData['releaseDate']));
+            
+            // Gérer l'image de couverture si elle existe
+            if (isset($videoGameData['coverImage']) && file_exists($this->fixturesPath . $videoGameData['coverImage'])) {
+                // Copier l'image des fixtures vers le dossier des uploads
+                $newFilename = uniqid() . '_' . $videoGameData['coverImage'];
+                copy(
+                    $this->fixturesPath . $videoGameData['coverImage'],
+                    $this->uploadsPath . $newFilename
+                );
+                
+                // Définir le nom du fichier dans l'entité
+                $videoGame->setCoverImage($newFilename);
+                $videoGame->setUpdatedAt(new \DateTimeImmutable());
+            }
             
             foreach ($videoGameData['categories'] as $category) {
                 $category = $this->getReference('category_' . $category, Category::class);

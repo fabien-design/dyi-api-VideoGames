@@ -22,12 +22,14 @@ class UserFixtures extends Fixture
         $admin->setEmail('admin@example.com');
         $admin->setRoles(['ROLE_ADMIN', 'ROLE_USER']);
         $admin->setPassword($this->passwordEncoder->hashPassword($admin, 'admin'));
+        $admin->setSubscriptionToNewsletter(false);
 
         $manager->persist($admin);
         $user = new User();
         $user->setEmail('user@example.com');
         $user->setRoles(['ROLE_USER']);
         $user->setPassword($this->passwordEncoder->hashPassword($user, 'user'));
+        $user->setSubscriptionToNewsletter(true);
 
         $manager->persist($user);
         $manager->flush();
