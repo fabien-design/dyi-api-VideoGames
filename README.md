@@ -41,8 +41,8 @@ symfony serve
 3. Créer et remplir la bdd
 ```bash
     php bin/console doctrine:database:create
-	php bin/console doctrine:migrations:migrate -y
-	php bin/console doctrine:fixtures:load -y
+	php bin/console doctrine:migrations:migrate
+	php bin/console doctrine:fixtures:load
 ```
 
 ### Accès Doc : 
